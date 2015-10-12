@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+   <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>canvas draw pics fs dropped</title>
+            <script src="../lib/jquery-2.1.4.min.js"></script>
+        </head>
+        <body>
+        <!-- demo illustrate drag and drop pic from desktop to canvas with h5 file supported-->
+            <canvas id="myCanvas" width="600" height="300" style="border:1px solid black;"></canvas>
+        <script type="text/javascript">
+            var c = document.getElementById('myCanvas');
+            var ctx = c.getContext('2d');
+
+            c.addEventListener('dragenter',function(e){
+                e.preventDefault();
+                e.dataTransfer.effectAllowed ='copy';
+            },false);
+
+            c.addEventListener('dragover',function(e){
+                e.preventDefault();
+            },false);
+
+            window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+            c.addEventListener('drop', function (e) {
+                e.preventDefault();
+                var file = e.dataTransfer.files[0];
+                window.requestFileSystem(window.TEMPORARY, 5 * 1024 * 1024, function (fs) {
+                    $.when(getImgUrl(fs,file)).then(function(url){
+                        drawImage(ctx,url);
+                    }).fail(function(){
+                        alert('please try it later on');
+                    })
+                })
+            }, false);
+
+            function getImgUrl(theFs, theFile) {
+                var dtd = $.Deferred();
+                theFs.root.getFile(theFile.name, {create: true},
+                        function (fileEntry) {
+                            fileEntry.createWriter(function (writer) {
+                                writer.write(theFile);
+                            });
+                            dtd.resolve(fileEntry.toURL());
+                        }, function (e) {
+                            alert(e.code);
+                            dtd.reject();
+                        })
+                return dtd.promise();
+            }
+
+            function drawImage(ctx,imgUrl){
+                var img = new Image();
+                img.src = imgUrl;
+                img.onload = function () {
+                    ctx.drawImage(img,0,0, c.width, c.height);
+                }
+            }
+        </script>
+        </body>
+   </html>
